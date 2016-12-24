@@ -1,4 +1,4 @@
-import Data.Char (digitToInt, isSpace)
+import Data.Char (digitToInt, isDigit, isSpace)
 
 safeHead :: [a] -> Maybe a
 safeHead (x:xs) = Just x
@@ -21,24 +21,23 @@ splitWith p xs = ys : splitWith p (dropWhile (not . p) zs)
   where (ys, zs) = span p xs
 
 asInt_fold :: String -> Integer
-asInt_fold [] = error "Empty string"
-asInt_fold (x:xs)
-  | x == '-'  = - (asInt_fold xs)
-  | otherwise = foldl step 0 (x:xs)
+asInt_fold ""       = 0
+asInt_fold ('-':xs) = - (asInt_fold xs)
+asInt_fold xs       = foldl step 0 xs
     where step acc x = acc * 10 + toInteger (digitToInt x)
 
 type ErrorMessage = String
 asInt_either :: String -> Either ErrorMessage Integer
-asInt_either [] = Left "Empty string"
-asInt_either (x:xs)
-  | x == '-'  = case asInt_either xs of
-                    Right num -> Right (-num)
-                    Left err -> Left err
-  | otherwise = Right (foldl step 0 (x:xs))
-    where step acc x = acc * 10 + toInteger (digitToInt x)
+asInt_either []       = Left "Empty string"
+asInt_either ('-':xs) = fmap negate $ asInt_either xs
+asInt_either xs       = foldl step (Right 0) xs
+    where step (Left  err) _ = Left err
+          step (Right acc) x
+            | isDigit x = Right $ acc * 10 + toInteger (digitToInt x)
+            | otherwise = Left $ "non-digit '" ++ [x] ++ "'"
 
 concat :: [[a]] -> [a]
-concat xss = foldr (++) [] xss
+concat = foldr (++) []
 
 takeWhile' :: (a -> Bool) -> [a] -> [a]
 takeWhile' _ [] = []
@@ -51,6 +50,9 @@ takeWhile'' p = foldr step []
     where step x acc
             | p x       = x : acc
             | otherwise = []
+
+groupBy' :: (a -> a -> Bool) -> [a] -> [[a]]
+groupBy' = undefined
 
 any' :: (a -> Bool) -> [a] -> Bool
 any' p = foldr (\a b -> p a || b) False
